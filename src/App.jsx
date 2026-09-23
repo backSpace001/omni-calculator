@@ -1,237 +1,176 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { CALCULATORS, CATEGORIES } from "./catalog.js";
+import { CameraCalc, HandwritingCalc, ReceiptCalc } from "./calculators/capture.jsx";
+import { CurrencyCalc, CookingCalc, DateCalc, JewelryCalc, UnitCalc } from "./calculators/converters.jsx";
+import { MusicCalc, PhotoCalc } from "./calculators/creative.jsx";
+import { ProgrammerCalc, ScientificCalc, StandardCalc, StatisticsCalc, TapeCalc } from "./calculators/everyday.jsx";
+import { GraphingCalc } from "./calculators/graphing.jsx";
+import { BmiCalc, BodyFatCalc, PregnancyCalc, TdeeCalc, WaterCalc } from "./calculators/health.jsx";
+import { CarpetCalc, ConcreteCalc, FlooringCalc, PaintCalc, RoofingCalc } from "./calculators/home.jsx";
+import { AutoCalc, BettingCalc, CompoundCalc, ExtraCalc, LoanCalc, ProfitCalc, SalaryCalc, TipCalc } from "./calculators/money.jsx";
 
-const KEYS = [
-  ["AC", "muted"],
-  ["±", "muted"],
-  ["%", "muted"],
-  ["÷", "accent"],
-  ["7", "plain"],
-  ["8", "plain"],
-  ["9", "plain"],
-  ["×", "accent"],
-  ["4", "plain"],
-  ["5", "plain"],
-  ["6", "plain"],
-  ["−", "accent"],
-  ["1", "plain"],
-  ["2", "plain"],
-  ["3", "plain"],
-  ["+", "accent"],
-  ["0", "plain"],
-  [".", "plain"],
-  ["⌫", "plain"],
-  ["=", "accent"],
-];
-
-const OPS = {
-  "÷": (a, b) => (b === 0 ? NaN : a / b),
-  "×": (a, b) => a * b,
-  "−": (a, b) => a - b,
-  "+": (a, b) => a + b,
+const PAGES = {
+  standard: StandardCalc,
+  tape: TapeCalc,
+  scientific: ScientificCalc,
+  graphing: GraphingCalc,
+  programmer: ProgrammerCalc,
+  statistics: StatisticsCalc,
+  units: UnitCalc,
+  currency: CurrencyCalc,
+  datetime: DateCalc,
+  cooking: CookingCalc,
+  jewelry: JewelryCalc,
+  tip: TipCalc,
+  loan: LoanCalc,
+  extra: ExtraCalc,
+  compound: CompoundCalc,
+  salary: SalaryCalc,
+  auto: AutoCalc,
+  profit: ProfitCalc,
+  betting: BettingCalc,
+  flooring: FlooringCalc,
+  paint: PaintCalc,
+  concrete: ConcreteCalc,
+  roofing: RoofingCalc,
+  carpet: CarpetCalc,
+  bmi: BmiCalc,
+  bodyfat: BodyFatCalc,
+  tdee: TdeeCalc,
+  water: WaterCalc,
+  pregnancy: PregnancyCalc,
+  photo: PhotoCalc,
+  music: MusicCalc,
+  camera: CameraCalc,
+  receipt: ReceiptCalc,
+  handwriting: HandwritingCalc,
 };
 
-function format(value) {
-  if (!Number.isFinite(value)) return "Error";
-  const rounded = Math.round(value * 1e10) / 1e10;
-  return String(rounded);
+function currentId() {
+  return window.location.hash.replace(/^#\/?/, "");
 }
 
 export default function App() {
-  const [display, setDisplay] = useState("0");
-  const [pending, setPending] = useState(null);
-  const [fresh, setFresh] = useState(true);
-  const [history, setHistory] = useState([]);
+  const [route, setRoute] = useState(currentId);
+  const [query, setQuery] = useState("");
 
-  const pushDigit = (digit) => {
-    if (digit === "." && display.includes(".") && !fresh) return;
-    if (fresh) {
-      setDisplay(digit === "." ? "0." : digit);
-      setFresh(false);
-      return;
-    }
-    setDisplay(display === "0" && digit !== "." ? digit : display + digit);
+  useEffect(() => {
+    const onHash = () => setRoute(currentId());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+
+  const go = (id) => {
+    window.location.hash = id ? `#/${id}` : "#/";
   };
 
-  const resolve = () => {
-    if (!pending) return Number(display);
-    return OPS[pending.op](pending.left, Number(display));
-  };
-
-  const handle = (key) => {
-    if (/^[0-9.]$/.test(key)) return pushDigit(key);
-
-    if (key === "AC") {
-      setDisplay("0");
-      setPending(null);
-      setFresh(true);
-      return;
-    }
-
-    if (key === "⌫") {
-      if (fresh) return;
-      const next = display.slice(0, -1);
-      setDisplay(next === "" || next === "-" ? "0" : next);
-      return;
-    }
-
-    if (key === "±") {
-      setDisplay(display.startsWith("-") ? display.slice(1) : `-${display}`);
-      return;
-    }
-
-    if (key === "%") {
-      setDisplay(format(Number(display) / 100));
-      setFresh(false);
-      return;
-    }
-
-    if (key === "=") {
-      if (!pending) return;
-      const result = resolve();
-      const expression = `${format(pending.left)} ${pending.op} ${display}`;
-      setHistory([{ expression, result: format(result) }, ...history].slice(0, 5));
-      setDisplay(format(result));
-      setPending(null);
-      setFresh(true);
-      return;
-    }
-
-    const left = resolve();
-    setDisplay(format(left));
-    setPending({ op: key, left });
-    setFresh(true);
-  };
-
-  const keyStyle = (variant) => ({
-    padding: "18px 0",
-    borderRadius: 14,
-    fontSize: 20,
-    fontWeight: 500,
-    color: variant === "accent" ? "#1b2437" : "var(--text)",
-    background:
-      variant === "accent"
-        ? "var(--accent)"
-        : variant === "muted"
-        ? "var(--panel-soft)"
-        : "#2c3752",
-  });
+  const Page = PAGES[route];
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return CALCULATORS;
+    return CALCULATORS.filter((c) => `${c.title} ${c.blurb}`.toLowerCase().includes(q));
+  }, [query]);
 
   return (
-    <main
+    <div
       style={{
+        minHeight: "100vh",
         display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        padding: 32,
-        width: "100%",
-        maxWidth: 420,
+        justifyContent: "center",
+        padding: "28px 20px 64px",
       }}
     >
-      <header style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <h1 style={{ margin: 0, fontSize: 26, letterSpacing: "-0.01em" }}>
-          Omni Calculator
-        </h1>
-        <p style={{ margin: 0, color: "var(--muted)", fontSize: 14 }}>
-          A small everyday calculator.
-        </p>
-      </header>
-
-      <section
-        style={{
-          background: "var(--panel)",
-          borderRadius: 20,
-          padding: 24,
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
-        }}
-      >
-        <div
-          aria-live="polite"
-          style={{
-            textAlign: "right",
-            fontSize: 44,
-            fontWeight: 600,
-            minHeight: 56,
-            overflowWrap: "anywhere",
-          }}
-        >
-          {display}
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 10,
-          }}
-        >
-          {KEYS.map(([key, variant]) => (
+      <div style={{ width: "100%", maxWidth: 880, display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {Page ? (
             <button
-              key={key}
-              onClick={() => handle(key)}
-              className={
-                variant === "accent"
-                  ? "key-accent"
-                  : variant === "muted"
-                  ? "key-muted"
-                  : "key"
-              }
-              style={keyStyle(variant)}
+              className="back"
+              onClick={() => go("")}
+              style={{ alignSelf: "flex-start", color: "var(--muted)", fontSize: 14 }}
             >
-              {key}
+              ← All calculators
             </button>
-          ))}
+          ) : null}
+          {!Page ? (
+            <>
+              <h1 style={{ margin: 0, fontSize: 32, letterSpacing: "-0.03em" }}>Omni Calculator</h1>
+              <p style={{ margin: 0, color: "var(--muted)", fontSize: 16, lineHeight: 1.5 }}>
+                Everyday math, money, home projects, health, and more — pick a tool to get started.
+              </p>
+            </>
+          ) : null}
         </div>
-      </section>
 
-      <section style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 13,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: "var(--muted)",
-          }}
-        >
-          Recent
-        </h2>
-        {history.length === 0 ? (
-          <p style={{ margin: 0, color: "var(--muted)", fontSize: 14 }}>
-            Your last five calculations appear here.
-          </p>
+        {Page ? (
+          <Page />
         ) : (
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: "none",
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-            }}
-          >
-            {history.map((entry, index) => (
-              <li
-                key={`${entry.expression}-${index}`}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  background: "var(--panel)",
-                  borderRadius: 10,
-                  padding: "10px 14px",
-                  fontSize: 14,
-                }}
-              >
-                <span style={{ color: "var(--muted)" }}>{entry.expression}</span>
-                <span style={{ fontWeight: 600 }}>{entry.result}</span>
-              </li>
-            ))}
-          </ul>
+          <>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search calculators"
+              style={{
+                background: "var(--panel)",
+                border: "none",
+                borderRadius: 14,
+                padding: "14px 16px",
+                fontSize: 16,
+                outline: "none",
+              }}
+            />
+            {CATEGORIES.map((cat) => {
+              const items = filtered.filter((c) => c.category === cat.id);
+              if (!items.length) return null;
+              return (
+                <section key={cat.id} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <h2
+                    style={{
+                      margin: 0,
+                      fontSize: 13,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                    }}
+                  >
+                    {cat.label}
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    {items.map((item) => (
+                      <button
+                        key={item.id}
+                        className="card"
+                        onClick={() => go(item.id)}
+                        style={{
+                          textAlign: "left",
+                          background: "var(--panel)",
+                          borderRadius: 16,
+                          padding: 16,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 8,
+                          minHeight: 108,
+                        }}
+                      >
+                        <strong style={{ fontSize: 16 }}>{item.title}</strong>
+                        <span style={{ color: "var(--muted)", fontSize: 13, lineHeight: 1.45 }}>{item.blurb}</span>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
+            {filtered.length === 0 ? (
+              <p style={{ color: "var(--muted)" }}>No calculators match “{query}”.</p>
+            ) : null}
+          </>
         )}
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

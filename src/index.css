@@ -5,6 +5,8 @@
   --text: #f1f5f9;
   --muted: #94a3b8;
   --accent: #f97316;
+  --key: #2c3752;
+  --line: #334155;
   font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
@@ -12,21 +14,29 @@
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 button {
   font: inherit;
   cursor: pointer;
   border: none;
+  background: none;
+  color: inherit;
   transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
 }
 
 .key:hover {
@@ -38,5 +48,18 @@ button {
 }
 
 .key-muted:hover {
+  background: #33405c;
+}
+
+.card:hover {
+  background: #223049;
+}
+
+.back:hover,
+.linkish:hover {
+  color: var(--accent);
+}
+
+.preset:hover {
   background: #33405c;
 }

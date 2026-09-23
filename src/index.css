@@ -1,0 +1,42 @@
+:root {
+  --bg: #0f172a;
+  --panel: #1b2437;
+  --panel-soft: #263047;
+  --text: #f1f5f9;
+  --muted: #94a3b8;
+  --accent: #f97316;
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.key:hover {
+  background: #33405c;
+}
+
+.key-accent:hover {
+  background: #fb8a3c;
+}
+
+.key-muted:hover {
+  background: #33405c;
+}
